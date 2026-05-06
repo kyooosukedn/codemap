@@ -31,3 +31,4 @@ export type {
 } from "./types.js";
 
 export { SCHEMA_VERSION } from "./types.js";
+export { FileTreeAnalyzer } from "./analyzers/file-tree.js";

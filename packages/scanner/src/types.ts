@@ -194,7 +194,9 @@ export type NodeType =
 export interface Analyzer {
   name: string;
   detect(project: ProjectInfo): boolean;
-  analyze(project: ProjectInfo): Promise<Partial<CodeMap>>;
+  /** Returns partial data that the scanner merges into a CodeMap */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  analyze(project: ProjectInfo): Promise<Record<string, any>>;
 }
 
 export interface ProjectInfo {
