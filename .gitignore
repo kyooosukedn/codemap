@@ -7,3 +7,6 @@ dist/
 codemap.json
 .DS_Store
 Thumbs.db
+
+# TypeScript build output in packages
+packages/*/dist/

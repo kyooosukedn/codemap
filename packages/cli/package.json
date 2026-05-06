@@ -1,0 +1,24 @@
+{
+  "name": "@codemap/cli",
+  "version": "0.1.0",
+  "description": "CLI entry point for CodeMap — scan codebases and open visualizer",
+  "type": "module",
+  "bin": {
+    "codemap": "./dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@codemap/scanner": "^0.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "typescript": "^5.0.0"
+  }
+}
