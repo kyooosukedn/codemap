@@ -194,10 +194,21 @@ export type NodeType =
 export interface Analyzer {
   name: string;
   detect(project: ProjectInfo): boolean;
-  /** Returns partial data that the scanner merges into a CodeMap */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  analyze(project: ProjectInfo): Promise<Record<string, any>>;
+  analyze(project: ProjectInfo): Promise<AnalyzerOutput>;
 }
+
+/** Whatever the analyzer returns. The scanner merges it into CodeMap. */
+export type AnalyzerOutput = {
+  fileTree?: FileTreeNode;
+  stats?: CodeMapStats;
+  entryPoints?: EntryPoint[];
+  routes?: Route[];
+  components?: Component[];
+  database?: DatabaseSchema;
+  services?: Service[];
+  imports?: ImportGraph;
+  tour?: TourDefinition;
+};
 
 export interface ProjectInfo {
   rootPath: string;
