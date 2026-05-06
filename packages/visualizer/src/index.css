@@ -83,3 +83,14 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ─── Node animations ──────────────────────────────────────── */
+@keyframes breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.015); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
