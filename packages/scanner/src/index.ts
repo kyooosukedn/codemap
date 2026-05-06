@@ -26,9 +26,12 @@ export type {
   TourStep,
   NodeType,
   Analyzer,
+  AnalyzerOutput,
   ProjectInfo,
   ViewPlugin,
 } from "./types.js";
 
 export { SCHEMA_VERSION } from "./types.js";
 export { FileTreeAnalyzer } from "./analyzers/file-tree.js";
+export { scan } from "./scanner.js";
+export { writeCodeMap } from "./output/json.js";

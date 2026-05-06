@@ -1,12 +1,24 @@
 import { describe, it, expect } from "vitest";
-import { resolve } from "node:path";
+import { resolve, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { existsSync } from "node:fs";
 import { FileTreeAnalyzer } from "./file-tree.js";
 import type { ProjectInfo } from "../types.js";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
-// From packages/scanner/src/analyzers/ → monorepo root = ../../../../
-const MONOREPO_ROOT = resolve(__dirname, "../../../../");
+
+function findRoot(start: string): string {
+  let dir = start;
+  for (let i = 0; i < 10; i++) {
+    if (existsSync(join(dir, "packages"))) return dir;
+    const parent = resolve(dir, "..");
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return start;
+}
+
+const MONOREPO_ROOT = findRoot(__dirname);
 const SCANNER_SRC = resolve(__dirname, "../");
 
 describe("FileTreeAnalyzer", () => {
@@ -20,41 +32,35 @@ describe("FileTreeAnalyzer", () => {
     const project: ProjectInfo = { rootPath: MONOREPO_ROOT };
     const result = await analyzer.analyze(project);
 
-    // Has fileTree
     expect(result.fileTree).toBeDefined();
     expect(result.fileTree.type).toBe("directory");
     expect(result.fileTree.children!.length).toBeGreaterThan(0);
 
-    // Has stats
     expect(result.stats.files).toBeGreaterThan(0);
     expect(result.stats.directories).toBeGreaterThan(0);
 
-    // Should find our packages directory
-    const packages = result.fileTree.children!.find((c) => c.name === "packages");
+    const packages = result.fileTree.children!.find((c: { name: string }) => c.name === "packages");
     expect(packages).toBeDefined();
     expect(packages!.type).toBe("directory");
 
-    // Should find scanner package inside
-    const scanner = packages!.children!.find((c) => c.name === "scanner");
+    const scanner = packages!.children!.find((c: { name: string }) => c.name === "scanner");
     expect(scanner).toBeDefined();
 
-    // Should NOT include node_modules
-    const nodeModules = result.fileTree.children!.find((c) => c.name === "node_modules");
+    const nodeModules = result.fileTree.children!.find((c: { name: string }) => c.name === "node_modules");
     expect(nodeModules).toBeUndefined();
 
-    // Should NOT include .git
-    const git = result.fileTree.children!.find((c) => c.name === ".git");
+    const git = result.fileTree.children!.find((c: { name: string }) => c.name === ".git");
     expect(git).toBeUndefined();
   });
 
   it("sorts directories before files", async () => {
     const project: ProjectInfo = { rootPath: MONOREPO_ROOT };
     const result = await analyzer.analyze(project);
-    const packages = result.fileTree.children!.find((c) => c.name === "packages");
+    const packages = result.fileTree.children!.find((c: { name: string }) => c.name === "packages");
 
     if (packages?.children && packages.children.length > 1) {
-      const firstFileIdx = packages.children.findIndex((c) => c.type === "file");
-      const lastDirIdx = packages.children.findLastIndex((c) => c.type === "directory");
+      const firstFileIdx = packages.children.findIndex((c: { type: string }) => c.type === "file");
+      const lastDirIdx = packages.children.findLastIndex((c: { type: string }) => c.type === "directory");
 
       if (firstFileIdx !== -1 && lastDirIdx !== -1) {
         expect(lastDirIdx).toBeLessThan(firstFileIdx);
@@ -65,7 +71,7 @@ describe("FileTreeAnalyzer", () => {
   it("marks files with extensions and sizes", async () => {
     const project: ProjectInfo = { rootPath: SCANNER_SRC };
     const result = await analyzer.analyze(project);
-    const typesFile = result.fileTree.children!.find((c) => c.name === "types.ts");
+    const typesFile = result.fileTree.children!.find((c: { name: string }) => c.name === "types.ts");
 
     expect(typesFile).toBeDefined();
     expect(typesFile!.extension).toBe(".ts");

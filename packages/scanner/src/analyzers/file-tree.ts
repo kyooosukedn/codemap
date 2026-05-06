@@ -1,5 +1,4 @@
-import { readFile } from "node:fs/promises";
-import { extname, join, relative } from "node:path";
+import { extname, join, relative, basename } from "node:path";
 import { readdir, stat } from "node:fs/promises";
 
 import type { FileTreeNode, ProjectInfo, Analyzer, CodeMapStats } from "../types.js";
@@ -16,7 +15,6 @@ const IGNORE_DIRS = new Set([
   ".turbo",
   ".vercel",
   "__pycache__",
-  ".DS_Store",
 ]);
 
 /** Files to always skip */
@@ -36,36 +34,24 @@ export class FileTreeAnalyzer implements Analyzer {
   name = "file-tree";
 
   detect(_project: ProjectInfo): boolean {
-    return true; // always runs
+    return true;
   }
 
   async analyze(project: ProjectInfo): Promise<{ fileTree: FileTreeNode; stats: CodeMapStats }> {
     const tree = await walkDir(project.rootPath, project.rootPath);
-    const stats = countStats(tree);
-    return {
-      fileTree: tree,
-      stats,
-    };
+    const stats = countNodes(tree);
+    return { fileTree: tree, stats };
   }
 }
 
 /** Recursively walk a directory and build the tree */
 async function walkDir(rootPath: string, currentPath: string): Promise<FileTreeNode> {
-  const name = currentPath === rootPath
-    ? rootPath.split(/[/\\]/).pop() || rootPath
-    : currentPath.split(/[/\\]/).pop()!;
-
+  const name = basename(currentPath);
   const relPath = relative(rootPath, currentPath) || ".";
   const s = await stat(currentPath);
 
   if (!s.isDirectory()) {
-    return {
-      name,
-      path: relPath,
-      type: "file",
-      size: s.size,
-      extension: extname(name) || undefined,
-    };
+    return { name, path: relPath, type: "file", size: s.size, extension: extname(name) || undefined };
   }
 
   const entries = await readdir(currentPath, { withFileTypes: true });
@@ -75,46 +61,34 @@ async function walkDir(rootPath: string, currentPath: string): Promise<FileTreeN
     if (entry.isDirectory() && IGNORE_DIRS.has(entry.name)) continue;
     if (entry.isFile() && IGNORE_FILES.has(entry.name)) continue;
 
-    const childPath = join(currentPath, entry.name);
     try {
-      children.push(await walkDir(rootPath, childPath));
+      children.push(await walkDir(rootPath, join(currentPath, entry.name)));
     } catch {
-      // Skip files we can't read (permissions, broken symlinks)
+      // Skip unreadable entries (permissions, broken symlinks)
     }
   }
 
-  // Sort: directories first, then files, alphabetical
   children.sort((a, b) => {
     if (a.type !== b.type) return a.type === "directory" ? -1 : 1;
     return a.name.localeCompare(b.name);
   });
 
-  return {
-    name,
-    path: relPath,
-    type: "directory",
-    children,
-  };
+  return { name, path: relPath, type: "directory", children };
 }
 
-/** Count files, directories, and total lines from the tree */
-function countStats(tree: FileTreeNode): CodeMapStats {
+/** Count files and directories in the tree */
+function countNodes(tree: FileTreeNode): CodeMapStats {
   let files = 0;
   let directories = 0;
-  let totalLines = 0;
 
-  // We'll count lines lazily — just count files and dirs for now.
-  // Line counting can be added later when we need it for real.
-  function walk(node: FileTreeNode) {
+  (function walk(node: FileTreeNode) {
     if (node.type === "file") {
       files++;
     } else {
       directories++;
       node.children?.forEach(walk);
     }
-  }
+  })(tree);
 
-  walk(tree);
-
-  return { files, directories, totalLines };
+  return { files, directories, totalLines: 0 };
 }
