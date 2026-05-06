@@ -1,0 +1,75 @@
+import { describe, it, expect } from "vitest";
+import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { FileTreeAnalyzer } from "./file-tree.js";
+import type { ProjectInfo } from "../types.js";
+
+const __dirname = fileURLToPath(new URL(".", import.meta.url));
+// From packages/scanner/src/analyzers/ → monorepo root = ../../../../
+const MONOREPO_ROOT = resolve(__dirname, "../../../../");
+const SCANNER_SRC = resolve(__dirname, "../");
+
+describe("FileTreeAnalyzer", () => {
+  const analyzer = new FileTreeAnalyzer();
+
+  it("always detects (returns true)", () => {
+    expect(analyzer.detect({ rootPath: "/any/path" })).toBe(true);
+  });
+
+  it("scans the codemap project itself", async () => {
+    const project: ProjectInfo = { rootPath: MONOREPO_ROOT };
+    const result = await analyzer.analyze(project);
+
+    // Has fileTree
+    expect(result.fileTree).toBeDefined();
+    expect(result.fileTree.type).toBe("directory");
+    expect(result.fileTree.children!.length).toBeGreaterThan(0);
+
+    // Has stats
+    expect(result.stats.files).toBeGreaterThan(0);
+    expect(result.stats.directories).toBeGreaterThan(0);
+
+    // Should find our packages directory
+    const packages = result.fileTree.children!.find((c) => c.name === "packages");
+    expect(packages).toBeDefined();
+    expect(packages!.type).toBe("directory");
+
+    // Should find scanner package inside
+    const scanner = packages!.children!.find((c) => c.name === "scanner");
+    expect(scanner).toBeDefined();
+
+    // Should NOT include node_modules
+    const nodeModules = result.fileTree.children!.find((c) => c.name === "node_modules");
+    expect(nodeModules).toBeUndefined();
+
+    // Should NOT include .git
+    const git = result.fileTree.children!.find((c) => c.name === ".git");
+    expect(git).toBeUndefined();
+  });
+
+  it("sorts directories before files", async () => {
+    const project: ProjectInfo = { rootPath: MONOREPO_ROOT };
+    const result = await analyzer.analyze(project);
+    const packages = result.fileTree.children!.find((c) => c.name === "packages");
+
+    if (packages?.children && packages.children.length > 1) {
+      const firstFileIdx = packages.children.findIndex((c) => c.type === "file");
+      const lastDirIdx = packages.children.findLastIndex((c) => c.type === "directory");
+
+      if (firstFileIdx !== -1 && lastDirIdx !== -1) {
+        expect(lastDirIdx).toBeLessThan(firstFileIdx);
+      }
+    }
+  });
+
+  it("marks files with extensions and sizes", async () => {
+    const project: ProjectInfo = { rootPath: SCANNER_SRC };
+    const result = await analyzer.analyze(project);
+    const typesFile = result.fileTree.children!.find((c) => c.name === "types.ts");
+
+    expect(typesFile).toBeDefined();
+    expect(typesFile!.extension).toBe(".ts");
+    expect(typesFile!.type).toBe("file");
+    expect(typesFile!.size).toBeGreaterThan(0);
+  });
+});
