@@ -1,12 +1,12 @@
-import { GraphCanvas } from "./graph/index.js";
+import { CodeMapProvider } from "./data/context";
+import { SystemOverview } from "./views/SystemOverview";
 
-/**
- * App shell — full viewport, dark canvas.
- */
 export function App() {
   return (
-    <div style={{ width: "100vw", height: "100vh" }}>
-      <GraphCanvas />
-    </div>
+    <CodeMapProvider>
+      <div style={{ width: "100vw", height: "100vh" }}>
+        <SystemOverview />
+      </div>
+    </CodeMapProvider>
   );
 }
