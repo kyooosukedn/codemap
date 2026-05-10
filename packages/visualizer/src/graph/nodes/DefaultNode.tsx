@@ -40,9 +40,10 @@ export interface CodeMapNodeData {
  *
  * Left border color = node type.
  * Hover = glow + slight scale.
- * Selected = breathing pulse.
+ * Selected = accent glow.
+ * Idle = subtle breathing (1.005x scale, 4s loop).
  */
-export function DefaultNode({ data, selected }: NodeProps) {
+export function DefaultNode({ data, selected, dragging }: NodeProps) {
   const { label, filePath, nodeType } = data as CodeMapNodeData;
   const color = TYPE_COLORS[nodeType] ?? TYPE_COLORS.library;
   const icon = TYPE_ICONS[nodeType] ?? "📁";
@@ -66,7 +67,11 @@ export function DefaultNode({ data, selected }: NodeProps) {
             : "none",
           transition: "box-shadow 200ms ease, border-color 200ms ease, transform 200ms ease",
           cursor: "grab",
-          animation: selected ? "breathe 4s ease-in-out infinite" : "none",
+          animation: selected
+            ? "none"
+            : dragging
+              ? "none"
+              : "breathe 4s ease-in-out infinite",
         }}
         onMouseEnter={(e) => {
           if (!selected) {
