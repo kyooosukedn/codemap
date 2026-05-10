@@ -37,7 +37,7 @@ export function GraphCanvas({
       minZoom={0.1}
       maxZoom={4}
       proOptions={{ hideAttribution: true }}
-      style={{ background: "var(--bg)" }}
+      style={{ background: "var(--bg)", width: "100%", height: "100%" }}
       defaultEdgeOptions={{
         type: "smoothstep",
         style: { stroke: "var(--border-active)", strokeWidth: 1.5 },
